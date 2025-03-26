@@ -1,0 +1,6 @@
+name: "my-project-website"
+navbar:
+  title: "TTC Subway Delay Analysis"
+  left:
+    - text: "Home"
+      href: index.html

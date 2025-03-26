@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Omina Nematova" />
+
+
+<title>TTC Subway Delay Analysis</title>
+
+<script src="site_libs/header-attrs-2.20/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/htmltools-fill-0.5.8.1/fill.css" rel="stylesheet" />
+<script src="site_libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+<link href="site_libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
+<script src="site_libs/leaflet-1.3.1/leaflet.js"></script>
+<link href="site_libs/leafletfix-1.0.0/leafletfix.css" rel="stylesheet" />
+<script src="site_libs/proj4-2.6.2/proj4.min.js"></script>
+<script src="site_libs/Proj4Leaflet-1.0.1/proj4leaflet.js"></script>
+<link href="site_libs/rstudio_leaflet-1.3.1/rstudio_leaflet.css" rel="stylesheet" />
+<script src="site_libs/leaflet-binding-2.2.2/leaflet.js"></script>
+<script src="site_libs/plotly-binding-4.10.4/plotly.js"></script>
+<script src="site_libs/typedarray-0.1/typedarray.min.js"></script>
+<link href="site_libs/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet" />
+<script src="site_libs/crosstalk-1.2.1/js/crosstalk.min.js"></script>
+<link href="site_libs/plotly-htmlwidgets-css-2.11.1/plotly-htmlwidgets.css" rel="stylesheet" />
+<script src="site_libs/plotly-main-2.11.1/plotly-latest.min.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">TTC Subway Delay Analysis</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">TTC Subway Delay Analysis</h1>
+<h4 class="author">Omina Nematova</h4>
+
+</div>
+
+
+<p>This is my JSC370 Final Project website.</p>
+<div id="showcasing-plots" class="section level2 tabset">
+<h2 class="tabset">Showcasing plots</h2>
+<div id="figure-1" class="section level3">
+<h3>Figure 1</h3>
+<div class="leaflet html-widget html-fill-item" id="htmlwidget-f4a9f610e1d73a60a61d" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-f4a9f610e1d73a60a61d">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"https://openstreetmap.org/copyright/\">OpenStreetMap<\/a>,  <a href=\"https://opendatacommons.org/licenses/odbl/\">ODbL<\/a>"}]},{"method":"addCircleMarkers","args":[[43.66641590196867,43.6701851,43.7667987,43.7690604,43.6707855,43.6770471,43.6734986,43.6782277,43.6640809,43.6606617,43.6839754,43.6976475,43.775347,43.6808549,43.75348,43.6602635,43.6565367,43.65673098568642,43.6747046,43.7045789,43.6995707,43.7827501,43.7651327,43.709568,43.6824765,43.6540856,43.7833141,43.645335,43.6500872,43.6553768,43.7325599,43.6485227,43.63753245,43.6593524,42.7559413,43.7148335,43.7704145,43.689078,43.6668462,43.7686787,43.6501618,43.6508016,43.6623665,43.6800489,43.7768779,43.4480651,43.6596838,43.67646405,43.648159,43.6517581,43.74925275,43.7616974,43.67218771983478,43.6672546,43.6477917,43.687873,43.6842388,43.6686549,43.6548199,43.68229585,43.6447101,43.7942413,43.6940902,43.7109952,43.665403,43.734787,43.6864139,43.7451771,43.7741232,43.7246418],[-79.41130918066413,-79.39026939999999,-79.3873787,-79.37588370821047,-79.38568669999999,-79.35839530606879,-79.36904579999999,-79.3525143,-79.4185289,-79.3827952,-79.3229654,-79.39696069999999,-79.34594389999999,-79.3377699,-79.47828440000001,-79.4353869,-79.3810223,-79.4538194909717,-79.406983,-79.3984763,-79.4364738,-79.41488829825582,-79.49102291851625,-79.44129599999999,-79.3302798,-79.4660951,-79.5230877,-79.5248163,-79.4833259,-79.4599058,-79.2638992,-79.3777728,-79.53560410315569,-79.44319175000001,-81.41483220000001,-79.44374061169376,-79.3676705,-79.30194109999999,-79.39335060000001,-79.4126298,-79.495091,-79.3865409,-79.42650949999999,-79.34456659999999,-79.5089377,-80.48777750000001,-79.3901923,-79.38853674148251,-79.51106470000001,-79.4759426,-79.46222522403818,-79.41188870000001,-79.37648191432166,-79.403828,-79.3848711,-79.39183800000001,-79.41537529999999,-79.39810900000001,-79.38827360000001,-79.39077690652948,-79.38013965704317,-79.52746380000001,-79.2885591,-79.2798858,-79.3836001,-79.4508764,-79.31262460000001,-79.4059651,-79.49962910000001,-79.44750310000001],[7.937253933193772,8.54400374531753,6.557438524302,4.358898943540674,22.93468988235943,10.67707825203131,8.124038404635961,7.54983443527075,8.306623862918075,12.08304597359457,12.16552506059644,15.65247584249853,8.660254037844387,9.486832980505138,7.810249675906654,8,13.96424004376894,8.48528137423857,10.48808848170152,17.94435844492636,10.19803902718557,16.70329308849007,8.660254037844387,8.660254037844387,11.40175425099138,6.403124237432849,9.16515138991168,9,7.416198487095663,11.91637528781298,18.16590212458495,11.61895003862225,18.33030277982336,7.54983443527075,13.60147050873544,9.327379053088816,6.557438524302,9.539392014169456,9.539392014169456,11.35781669160055,8.774964387392123,8.888194417315589,9.380831519646859,9.695359714832659,6.928203230275509,10.04987562112089,9.486832980505138,12.28820572744451,8.18535277187245,7.14142842854285,17.0293863659264,9.219544457292887,9.695359714832659,14.17744687875783,9.486832980505138,14.38749456993816,12.08304597359457,18.08314132002512,7.810249675906654,11.57583690279023,14.86606874731851,13.74772708486752,11.4455231422596,11.48912529307606,12.28820572744451,15.55634918610405,7.416198487095663,12.88409872672513,6.244997998398398,10.63014581273465],null,null,{"interactive":true,"className":"","stroke":false,"color":"darkred","weight":5,"opacity":0.5,"fill":true,"fillColor":"darkred","fillOpacity":0.7},null,null,["<b>BATHURST STATION<\/b><br>Delays: 63","<b>BAY STATION<\/b><br>Delays: 73","<b>BAYVIEW STATION<\/b><br>Delays: 43","<b>BESSARION STATION<\/b><br>Delays: 19","<b>BLOOR-YONGE STATION<\/b><br>Delays: 526","<b>BROADVIEW STATION<\/b><br>Delays: 114","<b>CASTLE FRANK STATION<\/b><br>Delays: 66","<b>CHESTER STATION<\/b><br>Delays: 57","<b>CHRISTIE STATION<\/b><br>Delays: 69","<b>COLLEGE STATION<\/b><br>Delays: 146","<b>COXWELL STATION<\/b><br>Delays: 148","<b>DAVISVILLE STATION<\/b><br>Delays: 245","<b>DON MILLS STATION<\/b><br>Delays: 75","<b>DONLANDS STATION<\/b><br>Delays: 90","<b>DOWNSVIEW PARK STATION<\/b><br>Delays: 61","<b>DUFFERIN STATION<\/b><br>Delays: 64","<b>DUNDAS STATION<\/b><br>Delays: 195","<b>DUNDAS WEST STATION<\/b><br>Delays: 72","<b>DUPONT STATION<\/b><br>Delays: 110","<b>EGLINTON STATION<\/b><br>Delays: 322","<b>EGLINTON WEST STATION<\/b><br>Delays: 104","<b>FINCH STATION<\/b><br>Delays: 279","<b>FINCH WEST STATION<\/b><br>Delays: 75","<b>GLENCAIRN STATION<\/b><br>Delays: 75","<b>GREENWOOD STATION<\/b><br>Delays: 130","<b>HIGH PARK STATION<\/b><br>Delays: 41","<b>HIGHWAY 407 STATION<\/b><br>Delays: 84","<b>ISLINGTON STATION<\/b><br>Delays: 81","<b>JANE STATION<\/b><br>Delays: 55","<b>KEELE STATION<\/b><br>Delays: 142","<b>KENNEDY STATION<\/b><br>Delays: 330","<b>KING STATION<\/b><br>Delays: 135","<b>KIPLING STATION<\/b><br>Delays: 336","<b>LANSDOWNE STATION<\/b><br>Delays: 57","<b>LAWRENCE STATION<\/b><br>Delays: 185","<b>LAWRENCE WEST STATION<\/b><br>Delays: 87","<b>LESLIE STATION<\/b><br>Delays: 43","<b>MAIN STREET STATION<\/b><br>Delays: 91","<b>MUSEUM STATION<\/b><br>Delays: 91","<b>NORTH YORK CENTRE STATION<\/b><br>Delays: 129","<b>OLD MILL STATION<\/b><br>Delays: 77","<b>OSGOODE STATION<\/b><br>Delays: 79","<b>OSSINGTON STATION<\/b><br>Delays: 88","<b>PAPE STATION<\/b><br>Delays: 94","<b>PIONEER VILLAGE STATION<\/b><br>Delays: 48","<b>QUEEN STATION<\/b><br>Delays: 101","<b>QUEEN'S PARK STATION<\/b><br>Delays: 90","<b>ROSEDALE STATION<\/b><br>Delays: 151","<b>ROYAL YORK STATION<\/b><br>Delays: 67","<b>RUNNYMEDE STATION<\/b><br>Delays: 51","<b>SHEPPARD WEST STATION<\/b><br>Delays: 290","<b>SHEPPARD-YONGE STATION<\/b><br>Delays: 85","<b>SHERBOURNE STATION<\/b><br>Delays: 94","<b>SPADINA STATION<\/b><br>Delays: 201","<b>ST ANDREW STATION<\/b><br>Delays: 90","<b>ST CLAIR STATION<\/b><br>Delays: 207","<b>ST CLAIR WEST STATION<\/b><br>Delays: 146","<b>ST GEORGE STATION<\/b><br>Delays: 327","<b>ST PATRICK STATION<\/b><br>Delays: 61","<b>SUMMERHILL STATION<\/b><br>Delays: 134","<b>UNION STATION<\/b><br>Delays: 221","<b>VAUGHAN METROPOLITAN CENTRE STATION<\/b><br>Delays: 189","<b>VICTORIA PARK STATION<\/b><br>Delays: 131","<b>WARDEN STATION<\/b><br>Delays: 132","<b>WELLESLEY STATION<\/b><br>Delays: 151","<b>WILSON STATION<\/b><br>Delays: 242","<b>WOODBINE STATION<\/b><br>Delays: 55","<b>YORK MILLS STATION<\/b><br>Delays: 166","<b>YORK UNIVERSITY STATION<\/b><br>Delays: 39","<b>YORKDALE STATION<\/b><br>Delays: 113"],null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addControl","args":["<div>\n  <h4>Subway Delay Frequency by Station<\/h4>\n<\/div>","topright",null,"info legend"]}],"limits":{"lat":[42.7559413,43.7942413],"lng":[-81.41483220000001,-79.2638992]}},"evals":[],"jsHooks":[]}</script>
+</div>
+<div id="figure-2" class="section level3">
+<h3>Figure 2</h3>
+<div class="plotly html-widget html-fill-item" id="htmlwidget-26969b7298165e78d04c" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-26969b7298165e78d04c">{"x":{"visdat":{"147ac4c15890e":["function () ","plotlyVisDat"]},"cur_data":"147ac4c15890e","attrs":{"147ac4c15890e":{"x":{},"y":{},"z":{},"colors":"Reds","alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"heatmap"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"title":"Frequency of Delays by Hour and Day of Week","xaxis":{"domain":[0,1],"automargin":true,"title":"Hour of Day"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Day of Week","type":"category","categoryorder":"array","categoryarray":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]},"scene":{"zaxis":{"title":"delay_count"}},"hovermode":"closest","showlegend":false,"legend":{"yanchor":"top","y":0.5}},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"colorbar":{"title":"delay_count","ticklen":2,"len":0.5,"lenmode":"fraction","y":1,"yanchor":"top"},"colorscale":[["0","rgba(255,245,240,1)"],["0.0416666666666667","rgba(255,238,230,1)"],["0.0833333333333333","rgba(255,231,220,1)"],["0.125","rgba(254,224,210,1)"],["0.166666666666667","rgba(254,212,193,1)"],["0.208333333333333","rgba(253,199,177,1)"],["0.25","rgba(252,187,161,1)"],["0.291666666666667","rgba(253,174,145,1)"],["0.333333333333333","rgba(253,160,129,1)"],["0.375","rgba(252,146,114,1)"],["0.416666666666667","rgba(252,133,101,1)"],["0.458333333333333","rgba(252,120,87,1)"],["0.5","rgba(251,106,74,1)"],["0.541666666666667","rgba(247,92,64,1)"],["0.583333333333333","rgba(243,77,54,1)"],["0.625","rgba(239,59,44,1)"],["0.666666666666667","rgba(227,49,39,1)"],["0.708333333333333","rgba(215,37,34,1)"],["0.75","rgba(203,24,29,1)"],["0.791666666666667","rgba(190,21,26,1)"],["0.833333333333333","rgba(178,18,24,1)"],["0.875","rgba(165,15,21,1)"],["0.916666666666667","rgba(144,9,19,1)"],["0.958333333333333","rgba(123,3,16,1)"],["1","rgba(103,0,13,1)"]],"showscale":true,"x":[0,1,2,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],"y":["Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Friday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Monday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Saturday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Sunday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Thursday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Tuesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday","Wednesday"],"z":[59,49,2,52,78,67,72,74,55,65,47,65,75,93,76,93,66,69,65,50,57,60,28,35,2,64,103,90,111,60,69,52,44,64,70,85,70,95,68,57,50,38,43,51,41,34,1,3,2,58,75,26,26,45,47,54,58,64,70,58,61,66,63,67,56,63,65,54,25,25,6,1,2,20,150,41,46,48,39,54,56,44,55,47,58,47,55,34,49,43,36,35,3,56,104,74,73,65,60,58,54,66,75,75,104,84,66,69,55,45,56,52,42,41,5,67,98,76,110,60,55,71,68,84,73,72,116,73,77,82,57,42,44,46,42,27,4,1,57,86,67,87,66,41,68,61,79,76,71,80,97,72,68,64,48,53,49],"type":"heatmap","xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<p>{-}</p>
+</div>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
