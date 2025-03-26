@@ -1,6 +1,6 @@
 name: "my-project-website"
 navbar:
-  title: "My Project Website"
+  title: "TTC Subway Delay Analysis"
   left:
     - text: "Home"
       href: index.html
