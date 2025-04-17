@@ -4,4 +4,15 @@ navbar:
   title: "TTC Subway Delay Analysis"
   left:
     - text: "Home"
-      href: index.html
+      href: home.html
+    - text: "About"
+      href: about.html
+    - text: "EDA"
+      href: plots.html
+    - text: "ML Analysis"
+      href: ml.html
+  right:
+    - text: "References"
+      href: references.html
+    - text: "GitHub Repo"
+      href: https://github.com/omina26/TTC-Subway-Delay-Analysis

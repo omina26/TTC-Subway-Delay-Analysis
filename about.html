@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>About</title>
+
+<script src="site_libs/header-attrs-2.20/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">TTC Subway Delay Analysis</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="home.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="plots.html">EDA</a>
+</li>
+<li>
+  <a href="ml.html">ML Analysis</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="references.html">References</a>
+</li>
+<li>
+  <a href="https://github.com/omina26/TTC-Subway-Delay-Analysis">GitHub Repo</a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">About</h1>
+
+</div>
+
+
+<div id="introduction" class="section level3">
+<h3>Introduction</h3>
+<p>As businesses increasingly encourage employees to return to in-oﬀice
+work, reliable transporta- tion is becoming more important than ever for
+commuters. Many workers rely on subway systems for their daily commutes.
+Subway delays can disrupt schedules, increase travel time uncertainty,
+and even influence long-term decisions about where people choose to live
+or work. While some delays may be unavoidable, understanding when and
+where these delays occur, as well as how external factors like weather
+conditions and population density contribute to service disruptions can
+help both commuters and policymakers make informed decisions. This study
+investigates when and where subway delays occur within the Toronto
+Transit Com- mission (TTC) system and analyzes the impact of weather
+conditions and service population density on these delays using a merged
+dataset from multiple sources. Subway delay reports (see reference) were
+obtained from the City of Toronto Open Data Catalogue, providing details
+on location, time, and cause of delays across the TTC subway network.
+Service population estimates were derived from Toronto Neighbourhood
+Profiles (see reference), also sourced from the Open Data Catalogue,
+while spatial data for neighbourhoods and station locations was
+incorporated using the Toronto Neighbourhoods shapefile (see reference),
+TTC Subway and Streetcar Map (see reference) and OpenStreetMap API (see
+reference). Additionally, hourly weather data from 2024 was retrieved
+using the Open-meteo API (see reference), allowing for an assessment of
+temperature, precipitation, and other environmental factors at the time
+of each recorded delay.</p>
+</div>
+<div id="methodology" class="section level3">
+<h3>Methodology</h3>
+<p>To analyze the occurrence of subway delays and the potential impact
+of weather conditions and population density, this study integrates
+multiple datasets, combining transit delay re- ports, weather data, and
+demographic information. The TTC Subway Delay Data from 2024, acquired
+from the City of Toronto Open Data Catalogue, consists of 26,467 entries
+with de- tails on the date, time, day of the week, station, delay code
+(cause of delay), minutes of delay, minutes of gap between trains, train
+direction (bound), subway line, and vehicle ID. For this analysis, all
+columns were retained except for minutes of gap between trains and
+vehicle ID. To account for population density, Toronto Neighbourhood
+Profiles data from 2021, also sourced from the City of Toronto Open Data
+Catalogue, was incorporated. This dataset includes 158 entries with
+demographic information, from which only neighbourhood ID and total
+popu- lation were used to estimate the service population surrounding
+each station. Additionally, Toronto Neighbourhoods shapefile data,
+obtained from the City of Toronto Open Data Cata- logue, contained 158
+entries and 12 columns and was used for geographic mapping.</p>
+<p>To further enrich the analysis, a custom subway station dataframe was
+created by manually collecting the names of all 70 subway stations from
+the TTC Subway and Streetcar Map and retrieving station longitude and
+latitude coordinates using the OpenStreetMap API to allow for spatial
+integration with other dataframes. Weather conditions were incorporated
+using hourly weather data from 2024, retrieved from the Open-Meteo API,
+which contained 8,784 entries with columns detailing the date,
+temperature, relative humidity, apparent temperature, precipitation,
+rain, snowfall, snow depth, cloud cover, wind speed, wind direction, and
+wind gusts. All columns from this dataset were used to assess the impact
+of different weather variables on subway delays.</p>
+<p>Once collected, the datasets underwent extensive cleaning and
+preprocessing to ensure con- sistency and usability. The TTC Subway
+Delay Data, originally containing 10 columns, was filtered to remove
+minutes of gap between trains and vehicle ID. Columns were renamed for
+clarity, and duplicate rows or rows with null values in the bound or
+line columns were removed. Subway station names were standardized, and a
+new hour column was created to facilitate merging with the weather
+dataframe. The day, station, code, bound, and line columns were
+converted to categorical types to improve usability during analysis.
+Most importantly, only observations with delays greater than zero
+minutes and less than or equal to 30 minutes were retained, reducing the
+dataset to 9,038 rows. The population dataframe was created by filtering
+the Toronto Neighbourhood Profiles data to retain only neighbourhood ID
+and population estimates. In the weather dataset, null values in the
+snow depth column were filled with zero, and an hour column was
+generated from the date column.</p>
+<p>Data wrangling was performed to integrate these datasets into a
+unified structure. First, the Toronto Neighbourhoods shapefile was
+merged with the population dataframe using neighbour- hood IDs. Next,
+the stations dataframe was spatially joined with the neighbourhoods
+shapefile to identify neighborhoods within 0.5 km of a station, allowing
+service population estimates to be merged into the stations dataframe.
+The delay dataframe and weather dataframe were then merged on date and
+hour to create a comprehensive dataset. Finally, service population
+counts for each station were merged into this final dataset using
+station names as the key identifier.</p>
+<p>To understand patterns in subway delays, summary statistics were
+computed for all numerical variables in the dataset. A histogram was
+generated to visualize the distribution of delay durations, highlighting
+the frequency of different delay times. The most common delay codes were
+identified, and their frequency was plotted to determine the predominant
+causes of disruptions. Additionally, delays were analyzed across subway
+lines, train directions (bounds), and stations to assess variations in
+delay occurrence by location.</p>
+<p>Temporal analysis was conducted by examining delay frequencies and
+average delay durations by hour of the day. A bar plot illustrated the
+number of delays per hour, while a line plot showed fluctuations in
+average delay durations throughout the day. Spatial trends were further
+explored by identifying the top three stations per subway line with the
+highest delay occur- rences and comparing their average delay durations.
+A regression analysis was performed to evaluate the relationship between
+service population and delay duration, providing insights into whether
+higher-density areas experience more frequent or prolonged delays.</p>
+<p>A correlation heatmap was generated to assess relationships between
+weather variables and subway delays. Finally, an ANOVA test was
+conducted to determine whether delay durations significantly differed
+across days of the week, stations, subway lines, and subway bounds,
+offering statistical validation of observed trends.</p>
+<p>[ML methodology tbd]</p>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

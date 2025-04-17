@@ -1,13 +1,10 @@
 ---
-title: "TTC Subway Delay Analysis"
-author: "Omina Nematova"
+title: "Exploratory Data Analysis"
 output: 
     html_document:
         toc: TRUE
         toc_float: TRUE
 ---
-
-This is my JSC370 Final Project website.
 
 ```{r imports, include=F, warning=F, message=F}
 library(dplyr)
@@ -102,7 +99,7 @@ heat_plot = plot_ly(heat_df,
 ```
 
 
-## Showcasing plots {.tabset}
+This page shows some interactive plots created for exploratory purposes. Hover over the plots to see more information. You can find a written EDA report [here](https://github.com/omina26/TTC-Subway-Delay-Analysis/blob/main/EDA/report.pdf).
 
 ### Figure A. Delay Map
 
@@ -134,5 +131,6 @@ heat_plot
 According to Figure C, delays are most frequent on SUndays at 8 AM. Further, morning and afternoon rush hours are more prone to delays during the work week.
 
 
-{-}
+
+
 

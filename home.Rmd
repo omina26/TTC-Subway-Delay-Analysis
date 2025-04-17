@@ -1,0 +1,13 @@
+---
+title: "TTC Subway Delay Analysis"
+output: html_document
+---
+
+Welcome to the **TTC Subway Delay Analysis** website.  
+
+This project explores factors contributing to delays in Toronto's subway system using data on service disruptions, weather conditions, and neighborhood populations. 
+
+Navigate the tabs above to learn more about the analysis...
+
+-Omina Nematova
+

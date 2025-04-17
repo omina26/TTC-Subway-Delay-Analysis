@@ -1,0 +1,12 @@
+---
+title: "References"
+output: html_document
+---
+
+- [Open-meteo documentation](https://open-meteo.com/en/docs/historical-weather-api) 
+- [OpenStreetMap API documentation](https://wiki.openstreetmap.org/wiki/API_v0.6) 
+- [Toronto Neighbourhood Profiles](https://open.toronto.ca/dataset/neighbourhood-profiles/)
+- [Toronto Neighbourhoods](https://open.toronto.ca/dataset/neighbourhoods/)
+- [TTC Subway and Streetcar Map](https://cdn.ttc.ca/-/media/Project/TTC/DevProto/Images/Home/Routes-and-Schedules/Landing-page-pdfsTTC_SubwayStreetcarMap_2021-11.pdf?rev=909317034177450b8b09ba5b247e24bf)
+- [TTC Subway Delay Data](https://open.toronto.ca/dataset/ttc-subway-delay-data/)
+
