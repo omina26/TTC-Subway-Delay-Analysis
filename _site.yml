@@ -3,8 +3,8 @@ output_dir: "."
 navbar:
   title: "TTC Subway Delay Analysis"
   left:
-    - text: "Home"
-      href: index.html
+    #- text: "Home"
+    #  href: index.html
     - text: "About"
       href: about.html
     - text: "EDA"
