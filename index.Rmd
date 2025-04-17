@@ -19,15 +19,15 @@ library(htmltools)
 
 
 ```{r import data, include=F}
-df = read.csv("merged_data.csv", header = TRUE)
-coord_df = read.csv("stations_data.csv", header = TRUE)
+df = read.csv("data/merged_data.csv", header = TRUE)
+coord_df = read.csv("data/stations_data.csv", header = TRUE)
 ```
 
-```{r, include=F}
+```{r delay frequency by station, include=F}
 df_map <- df %>%
-  group_by(cleaned_station) %>%
-  summarize(delay_count = n(), .groups = "drop") %>%
-  inner_join(coord_df, by = c("cleaned_station" = "station"))
+  inner_join(coord_df, by = c("station" = "station")) %>%
+  group_by(station, latitude, longitude, service_population) %>%
+  summarize(delay_count = n(), .groups = "drop")
 
 delay_map = leaflet(df_map) %>%
   addTiles() %>%
@@ -36,7 +36,7 @@ delay_map = leaflet(df_map) %>%
     radius = ~sqrt(delay_count),  # scale size by count
     color = "darkred",
     stroke = FALSE, fillOpacity = 0.7,
-    popup = ~paste0("<b>", cleaned_station, "</b><br>Delays: ", delay_count)
+    popup = ~paste0("<b>", station, "</b><br>Service Population: ", service_population, "</b><br>Delays: ", delay_count)
   ) %>%
   addControl(
     html = tags$div(
@@ -48,7 +48,40 @@ delay_map = leaflet(df_map) %>%
 ```
 
 
-```{r, include=F}
+```{r service pop and delay metrics, echo=FALSE}
+station_line_stats <- df %>%
+  group_by(station, line, service_population) %>%
+  summarize(
+    delay_count = n(),
+    avg_duration = mean(min_delay, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+scatter_plot = plot_ly(
+  data = station_line_stats,
+  x = ~service_population,
+  y = ~avg_duration,
+  type = "scatter",
+  mode = "markers",
+  color = ~line,
+  marker = list(size = 10, opacity = 0.8),
+  text = ~paste0(
+    "<b>", station, " (", line, ")</b><br>",
+    "Service Pop: ", service_population, "<br>",
+    "Delays: ", delay_count, "<br>",
+    "Avg Duration: ", round(avg_duration, 1), " min"
+  ),
+  hoverinfo = "text"
+) %>%
+  layout(
+    title = "Average Delay vs Service Population by Station-Line",
+    xaxis = list(title = "Service Population"),
+    yaxis = list(title = "Average Delay Duration (min)")
+  )
+```
+
+
+```{r delay frequency by day and time, include=F}
 heat_df <- df %>%
   group_by(day, hour) %>%
   summarize(delay_count = n(), .groups = "drop")
@@ -63,7 +96,7 @@ heat_plot = plot_ly(heat_df,
         z = ~delay_count,
         type = "heatmap",
         colors = "Reds") %>%
-  layout(title = "Frequency of Delays by Hour and Day of Week",
+  layout(title = "Frequency of Subway Delays by Hour and Day of Week",
          xaxis = list(title = "Hour of Day"),
          yaxis = list(title = "Day of Week"))
 ```
@@ -71,19 +104,35 @@ heat_plot = plot_ly(heat_df,
 
 ## Showcasing plots {.tabset}
 
-### Figure 1
+### Figure A. Delay Map
 
-```{r echo=FALSE}
+
+```{r echo=FALSE, message=FALSE, fig.cap="<span style='font-size: 90%;'><strong>Figure A</strong>. The frequency of TTC subway delays at each station in 2024. Circle size reflects the number of delays, and the popup includes the service population.</span>"}
 delay_map
 ```
 
-### Figure 2
+According to Figure A, Bloor-Yonge Station had the highest frequency of subway delays across all stations. It also appears that terminal stations had more delays compared to non-terminal stations.
 
-```{r echo=FALSE}
+
+### Figure B. Delay vs Service Population
+
+
+```{r echo=FALSE, message=FALSE, fig.cap="<span style='font-size: 90%;'><strong>Figure B</strong>. Scatterplot of the average TTC Subway delay duration for each subway and line combination by the service population in 2024. Each point shows a station-line combination, with service population in the x-axis and average delay duration in the y-axis.</span>"}
+scatter_plot
+```
+
+According to Figure B, there doesn't appear to be a correlation between service population and average delay duration. On average, average delay duration is between 5 and 10 minutes. The stations with average delay duration greater than 10 minutes have one or two delays. Hence, these were probably caused by an unpredictable emergency situation.
+
+
+### Figure C. Heatmap: Delays by Day and Hour
+
+
+```{r echo=FALSE, message=FALSE, fig.cap="<span style='font-size: 90%;'><strong>Figure C</strong>. TTC Subway delay frequencys across days of the week and times of the day in 2024. Darker colors indicate more frequent delays during specific hours and days.</span>"}
 heat_plot
 ```
 
+According to Figure C, delays are most frequent on SUndays at 8 AM. Further, morning and afternoon rush hours are more prone to delays during the work week.
+
+
 {-}
-
-
 
