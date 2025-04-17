@@ -4,7 +4,7 @@ navbar:
   title: "TTC Subway Delay Analysis"
   left:
     - text: "Home"
-      href: home.html
+      href: index.html
     - text: "About"
       href: about.html
     - text: "EDA"
