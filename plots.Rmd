@@ -99,7 +99,7 @@ heat_plot = plot_ly(heat_df,
 ```
 
 
-This page shows some interactive plots created for exploratory purposes. Hover over the plots to see more information. You can find a written EDA report [here](https://github.com/omina26/TTC-Subway-Delay-Analysis/blob/main/EDA/report.pdf).
+This page shows some interactive plots created for exploratory purposes. Hover over the plots to see more information. You can find a written EDA report [here](https://github.com/omina26/TTC-Subway-Delay-Analysis/blob/main/EDA/EDA_report.pdf).
 
 ### Figure A. Delay Map
 
@@ -118,8 +118,7 @@ According to Figure A, Bloor-Yonge Station had the highest frequency of subway d
 scatter_plot
 ```
 
-According to Figure B, there doesn't appear to be a correlation between service population and average delay duration. On average, average delay duration is between 5 and 10 minutes. The stations with average delay duration greater than 10 minutes have one or two delays. Hence, these were probably caused by an unpredictable emergency situation.
-
+According to Figure B, there doesn't appear to be a correlation between service population and average delay duration. On average, average delay duration is between 5 and 10 minutes. The stations with average delay duration greater than 10 minutes have one or two delays. Hence, these were probably caused by an unpredictable emergency situation. (Note: Highway 407 and Vaughan Metropolitan Centre stations have a service population of 0 because they are located outside the Toronto neighbourhood boundaries. As a result, their populations were not found in the dataset used to derive this information.)
 
 ### Figure C. Heatmap: Delays by Day and Hour
 
@@ -128,7 +127,7 @@ According to Figure B, there doesn't appear to be a correlation between service 
 heat_plot
 ```
 
-According to Figure C, delays are most frequent on SUndays at 8 AM. Further, morning and afternoon rush hours are more prone to delays during the work week.
+According to Figure C, delays are most frequent on Sundays at 8 AM. Further, morning and afternoon rush hours are more prone to delays during the work week.
 
 
 

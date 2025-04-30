@@ -1,0 +1,376 @@
+---
+title: "ML_analysis"
+output: html_document
+---
+
+```{r imports, message=FALSE}
+library(knitr)
+library(tidyverse)
+library(caret)
+library(Metrics)
+library(mgcv)
+library(caret)
+library(ranger)
+library(gbm)
+library(doParallel)
+library(dplyr)
+library(xgboost)
+library(broom)
+library(kableExtra)
+```
+
+First, load data.
+
+```{r load data}
+# load data
+df = read.csv("../data/merged_data.csv", header = TRUE)
+```
+
+
+From the data frame I will use the following columns in my models: min_delay, bound, line, station, apparent_temperature, relative_humidity, precipitation, snowfall, snow_depth, cloud_cover, wind_speed, wind_gusts, hour, and service_population.
+
+```{r subset to relevant columns}
+# subset to relevant columns
+selected_vars = c(
+  "min_delay", "bound", "line", "station", "apparent_temperature", 
+  "relative_humidity", "precipitation", "snowfall", "snow_depth", 
+  "cloud_cover", "wind_speed", "wind_gusts", "hour", "service_population"
+)
+
+df = df |> 
+  select(all_of(selected_vars)) |>
+  mutate(
+    bound = as.factor(bound),
+    line = as.factor(line),
+    station = as.factor(station)
+  )
+```
+
+Now create train/test split.
+
+```{r train test split}
+# set seed
+set.seed(754)
+
+# train-test split (70/30)
+split_index = createDataPartition(df$min_delay, p = 0.7, list = FALSE)
+
+train_x = df[split_index, !(names(df) %in% "min_delay")]
+train_y = df[split_index, "min_delay", drop = FALSE]
+
+test_x  = df[-split_index, !(names(df) %in% "min_delay")]
+test_y  = df[-split_index, "min_delay", drop = FALSE]
+```
+
+
+Models that will be compared:
+- GLM with Gamma family
+- GAM
+- Random Forest
+- Gradient Boosting
+- XGBoost
+
+GLM with Gamma family:
+
+```{r GLM}
+# select predictors excluding 'station'
+predictors_glm = c(
+  "bound", "line", "apparent_temperature", "relative_humidity",
+  "precipitation", "snowfall", "snow_depth", "cloud_cover",
+  "wind_speed", "wind_gusts", "hour", "service_population"
+)
+
+# prepare training data
+train_glm = train_x |> select(all_of(predictors_glm))
+test_glm  = test_x |> select(all_of(predictors_glm))
+
+# fit GLM
+glm_gamma = glm(
+  min_delay ~ .,
+  data = cbind(train_y, train_glm),
+  family = Gamma(link = "log")
+)
+
+# show significance of predictors
+summary(glm_gamma)
+
+# predict
+pred_train_glm = predict(glm_gamma, newdata = train_glm, type = "response")
+pred_test_glm  = predict(glm_gamma, newdata = test_glm, type = "response")
+
+# evaluate performance
+glm_perf = tibble(
+  Model = "GLM (Gamma)",
+  RMSE_Train = rmse(train_y$min_delay, pred_train_glm),
+  MAE_Train = mae(train_y$min_delay, pred_train_glm),
+  R2_Train = 1 - sum((train_y$min_delay - pred_train_glm)^2) / sum((train_y$min_delay - mean(train_y$min_delay))^2),
+  RMSE_Test = rmse(test_y$min_delay, pred_test_glm),
+  MAE_Test = mae(test_y$min_delay, pred_test_glm),
+  R2_Test = 1 - sum((test_y$min_delay - pred_test_glm)^2) / sum((test_y$min_delay - mean(test_y$min_delay))^2)
+)
+
+glm_perf
+
+```
+
+
+GAM:
+
+```{r GAM}
+# fit GAM with smooth terms for continuous variables
+gam_model = gam(
+  min_delay ~ bound + line +
+    s(apparent_temperature) +
+    s(relative_humidity) +
+    s(precipitation) +
+    s(snowfall) +
+    s(snow_depth) +
+    s(cloud_cover) +
+    s(wind_speed) +
+    s(wind_gusts) +
+    s(hour) +
+    s(service_population),
+  family = Gamma(link = "log"),
+  data = cbind(train_y, train_glm)
+)
+
+# model summary: check significance of smooth terms
+summary(gam_model)
+
+# predict on train and test sets
+pred_train_gam = predict(gam_model, newdata = train_glm, type = "response")
+pred_test_gam  = predict(gam_model, newdata = test_glm, type = "response")
+
+# evaluate performance
+gam_perf = tibble(
+  Model = "GAM",
+  RMSE_Train = rmse(train_y$min_delay, pred_train_gam),
+  MAE_Train = mae(train_y$min_delay, pred_train_gam),
+  R2_Train = 1 - sum((train_y$min_delay - pred_train_gam)^2) / sum((train_y$min_delay - mean(train_y$min_delay))^2),
+  RMSE_Test = rmse(test_y$min_delay, pred_test_gam),
+  MAE_Test = mae(test_y$min_delay, pred_test_gam),
+  R2_Test = 1 - sum((test_y$min_delay - pred_test_gam)^2) / sum((test_y$min_delay - mean(test_y$min_delay))^2)
+)
+
+gam_perf
+```
+
+
+Random Forest: (used ranger instead of randomForest package since station has a cardinality of 70)
+
+```{r RF}
+# combine training data for formula interface
+train_rf_full = cbind(train_y, train_x)
+test_rf_full  = cbind(test_y, test_x)
+
+# define training control
+ctrl = trainControl(method = "cv", number = 5)
+
+# set up tuning grid
+rf_grid = expand.grid(
+  mtry = c(3, 5, 7),
+  splitrule = "variance",
+  min.node.size = c(5, 10)
+)
+
+# train with tuning
+set.seed(754)
+rf = train(
+  x = train_x,
+  y = train_y$min_delay,
+  method = "ranger",
+  trControl = trainControl(method = "cv", number = 5),
+  tuneGrid = rf_grid,
+  importance = "impurity",
+  num.trees = 500
+)
+
+# predict and evaluate
+pred_train_rf = predict(rf, newdata = train_x)
+pred_test_rf  = predict(rf, newdata = test_x)
+
+# best model
+kable(rf_tuned$bestTune, caption = "Best Hyperparameters for Random Forest", digits = 3)
+
+# variable importance plot
+vi_rf = varImp(rf)$importance |>
+  as_tibble(rownames = "Variable") |>
+  arrange(desc(Overall)) |>
+  head(20)
+
+ggplot(vi_rf, aes(x = reorder(Variable, Overall), y = Overall)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Variable Importance for Random Forest (Top 20)", x = NULL, y = "Importance")
+
+# evaluate performance
+rf_perf = tibble(
+  Model = "Random Forest",
+  RMSE_Train = rmse(train_y$min_delay, pred_train_rf),
+  MAE_Train = mae(train_y$min_delay, pred_train_rf),
+  R2_Train = 1 - sum((train_y$min_delay - pred_train_rf)^2) / sum((train_y$min_delay - mean(train_y$min_delay))^2),
+  RMSE_Test = rmse(test_y$min_delay, pred_test_rf),
+  MAE_Test = mae(test_y$min_delay, pred_test_rf),
+  R2_Test = 1 - sum((test_y$min_delay - pred_test_rf)^2) / sum((test_y$min_delay - mean(test_y$min_delay))^2)
+)
+
+rf_perf
+```
+
+
+Gradient Boosting:
+
+```{r GB}
+# combine training and test sets for gbm
+train_gbm = cbind(train_y, train_x)
+test_gbm  = cbind(test_y, test_x)
+
+# register parallel backend
+cl = makePSOCKcluster(4)
+registerDoParallel(cl)
+
+# tuning grid
+gbm_grid = expand.grid(
+  n.trees = c(200, 500),
+  interaction.depth = c(4, 6, 8),
+  shrinkage = c(0.01, 0.05),
+  n.minobsinnode = c(5, 10)
+)
+
+# train GBM model with tuning
+set.seed(754)
+gbm = train(
+  min_delay ~ ., 
+  data = train_gbm,
+  method = "gbm",
+  trControl = trainControl(method = "cv", number = 5),
+  tuneGrid = gbm_grid,
+  verbose = FALSE
+)
+
+# Stop the parallel cluster
+stopCluster(cl)
+registerDoSEQ()
+
+# predict
+pred_train_gbm = predict(gbm, newdata = train_gbm, n.trees = gbm$n.trees)
+pred_test_gbm  = predict(gbm, newdata = test_gbm,  n.trees = gbm$n.trees)
+
+# best model
+kable(gbm$bestTune, caption = "Best Hyperparameters for GBM", digits = 3)
+
+# variable importance plot
+vi_gbm = varImp(gbm)$importance |>
+  as_tibble(rownames = "Variable") |>
+  arrange(desc(Overall)) |>
+  head(20)
+
+ggplot(vi_gbm, aes(x = reorder(Variable, Overall), y = Overall)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Variable Importance for GBM (Top 20)", x = NULL, y = "Importance")
+
+# evaluate performance
+gbm_perf = tibble(
+  Model = "Gradient Boosting (Tuned)",
+  RMSE_Train = rmse(train_y$min_delay, pred_train_gbm),
+  MAE_Train = mae(train_y$min_delay, pred_train_gbm),
+  R2_Train = 1 - sum((train_y$min_delay - pred_train_gbm)^2) / sum((train_y$min_delay - mean(train_y$min_delay))^2),
+  RMSE_Test = rmse(test_y$min_delay, pred_test_gbm),
+  MAE_Test = mae(test_y$min_delay, pred_test_gbm),
+  R2_Test = 1 - sum((test_y$min_delay - pred_test_gbm)^2) / sum((test_y$min_delay - mean(test_y$min_delay))^2)
+)
+
+gbm_perf
+```
+
+
+XGBoost:
+
+```{r XGB}
+# one-hot encode predictors for XGBoost
+train_matrix = model.matrix(min_delay ~ . - 1, data = cbind(train_y, train_x))
+test_matrix  = model.matrix(min_delay ~ . - 1, data = cbind(test_y, test_x))
+
+# extract response variable
+train_label = train_y$min_delay
+test_label  = test_y$min_delay
+
+# convert to data.frames for caret
+train_xgb = as.data.frame(train_matrix)
+train_xgb$min_delay = train_y$min_delay
+test_xgb = as.data.frame(test_matrix)
+
+# parallel backend
+cl = makePSOCKcluster(4)
+registerDoParallel(cl)
+
+# tuning grid
+xgb_grid = expand.grid(
+  nrounds = c(200, 500),
+  max_depth = c(4, 6),
+  eta = c(0.05, 0.1),
+  gamma = c(0, 1),
+  colsample_bytree = c(0.7, 0.9),
+  min_child_weight = c(5, 10),
+  subsample = c(0.7, 0.9)
+)
+
+# train tuned model
+set.seed(754)
+xgb = train(
+  min_delay ~ .,
+  data = train_xgb,
+  method = "xgbTree",
+  trControl = trainControl(method = "cv", number = 5),
+  tuneGrid = xgb_grid,
+  verbose = FALSE
+)
+
+# stop parallel backend
+stopCluster(cl)
+registerDoSEQ()
+
+# predict with tuned model
+pred_train_xgb = predict(xgb, newdata = train_xgb)
+pred_test_xgb  = predict(xgb, newdata = test_xgb)
+
+# best model
+kable(xgb$bestTune, caption = "Best Hyperparameters for XGB", digits = 3)
+
+# variable importance
+vi_xgb = varImp(xgb)$importance |>
+  as_tibble(rownames = "Variable") |>
+  arrange(desc(Overall)) |>
+  head(20)
+
+ggplot(vi_xgb, aes(x = reorder(Variable, Overall), y = Overall)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Variable Importances  for XGBoost (Top 20)", x = NULL, y = "Importance")
+
+# evaluate performance
+xgb_perf= tibble(
+  Model = "XGBoost (Tuned)",
+  RMSE_Train = rmse(train_label, pred_train_xgb),
+  MAE_Train = mae(train_label, pred_train_xgb),
+  R2_Train = 1 - sum((train_label - pred_train_xgb)^2) / sum((train_label - mean(train_label))^2),
+  RMSE_Test = rmse(test_label, pred_test_xgb),
+  MAE_Test = mae(test_label, pred_test_xgb),
+  R2_Test = 1 - sum((test_label - pred_test_xgb)^2) / sum((test_label - mean(test_label))^2)
+)
+
+xgb_perf
+```
+
+
+Comparing Models
+```{r, include=FALSE}
+# combine all performance data frames
+model_perf = bind_rows(glm_perf, gam_perf, rf_perf, gbm_perf, xgb_perf)
+
+# display comparison table
+library(knitr)
+kable(model_perf, digits = 3, caption = "Model Performance Comparison (Train vs Test)")
+```
+

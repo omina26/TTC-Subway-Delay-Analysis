@@ -286,20 +286,22 @@ conditions and population density contribute to service disruptions can
 help both commuters and policymakers make informed decisions.</p>
 <p>Motivated by the question, “What factors affect subway delays on
 Toronto’s TTC?”, this study investigates when and where subway delays
-occur within the Toronto Transit Com- mission (TTC) system and analyzes
-the impact of weather conditions and service population density on these
-delays using a merged dataset from multiple sources. Subway delay
-reports (see reference) were obtained from the City of Toronto Open Data
-Catalogue, providing details on location, time, and cause of delays
-across the TTC subway network. Service population estimates were derived
-from Toronto Neighbourhood Profiles (see reference), also sourced from
-the Open Data Catalogue, while spatial data for neighbourhoods and
-station locations was incorporated using the Toronto Neighbourhoods
-shapefile (see reference), TTC Subway and Streetcar Map (see reference)
-and OpenStreetMap API (see reference). Additionally, hourly weather data
-from 2024 was retrieved using the Open-meteo API (see reference),
-allowing for an assessment of temperature, precipitation, and other
-environmental factors at the time of each recorded delay.</p>
+occur within the Toronto Transit Com- mission (TTC) system, analyzes the
+impact of weather conditions and service population density on these
+delays, and uses machine learning to predict the duration of subway
+delays. A merged dataset was constructed using multiple sources. Subway
+delay reports (see reference) were obtained from the City of Toronto
+Open Data Catalogue, providing details on location, time, and cause of
+delays across the TTC subway network. Service population estimates were
+derived from Toronto Neighbourhood Profiles (see reference), also
+sourced from the Open Data Catalogue, while spatial data for
+neighbourhoods and station locations was incorporated using the Toronto
+Neighbourhoods shapefile (see reference), TTC Subway and Streetcar Map
+(see reference) and OpenStreetMap API (see reference). Additionally,
+hourly weather data from 2024 was retrieved using the Open-meteo API
+(see reference), allowing for an assessment of temperature,
+precipitation, and other environmental factors at the time of each
+recorded delay.</p>
 </div>
 <div id="methodology" class="section level3">
 <h3>Methodology</h3>
@@ -379,7 +381,70 @@ weather variables and subway delays. Finally, an ANOVA test was
 conducted to determine whether delay durations significantly differed
 across days of the week, stations, subway lines, and subway bounds,
 offering statistical validation of observed trends.</p>
-<p>[ML methodology tbd]</p>
+<p>As part of the exploratory phase, three interactive visualizations
+were created using R to better understand subway delay patterns. First,
+a delay frequency map was generated using the <code>leaflet</code>
+package, displaying the total number of delays at each subway station
+using scaled circle markers, with popups showing station-level service
+population. Second, a scatterplot was created with <code>plotly</code>
+to visualize the relationship between service population and average
+delay duration, grouped by station and subway line. This allowed
+identification of outliers and variability in delay severity across
+different areas. Third, a heatmap of delay frequency by hour of day and
+day of week was constructed using <code>plotly</code>, highlighting
+temporal patterns in delays, such as peaks during rush hours or
+weekends. These visualizations provided insight into when and where
+delays were most frequent, and guided feature selection for the modeling
+stage.</p>
+<p>To predict TTC subway delay durations, five supervised learning
+models were trained and compared using a 70/30 train-test split. All
+modeling was conducted in R, and performance was evaluated using three
+key metrics:</p>
+<ul>
+<li>Root Mean Squared Error (RMSE): Measures the square root of the
+average squared differences between predicted and actual values. It
+penalizes larger errors more heavily and is expressed in the same units
+as the target variable (minutes).</li>
+<li>Mean Absolute Error (MAE): Calculates the average absolute
+difference between predictions and actual outcomes. It provides a
+straightforward interpretation of the average error in minutes.</li>
+<li>R-squared (R²): Represents the proportion of variance in the
+response variable explained by the model. Higher R² values indicate
+better explanatory power.</li>
+</ul>
+<p>Thirteen predictors were used in all models, including weather
+conditions, station, subway line, direction, service population, and
+time of day.</p>
+<p>The Generalized Linear Model (GLM) with a Gamma family and log link
+was selected to model delay duration as a positively right-skewed
+continuous variable. Categorical variables and continuous predictors
+were used. The Generalized Additive Model (GAM) was fit using the same
+predictors, with smooth functions applied to continuous variables to
+capture non-linear effects. In both cases, predictor significance was
+assessed using model summary statistics.</p>
+<p>The Random Forest model was implemented using the <code>ranger</code>
+method. This ensemble method builds multiple decision trees on
+bootstrapped subsets and averages predictions to reduce variance. It
+handles high-cardinality categorical features like station effectively.
+Tuning was performed over number of predictors at each split and minimum
+node size. The Gradient Boosting (GBM) model was trained using the
+<code>gbm</code> method, which builds trees sequentially, each trying to
+correct the residuals of the previous model. Its tuning involved number
+of trees, tree depth, learning rate, and minimum observations per node.
+XGBoost, an optimized implementation of gradient boosting, was trained
+using one-hot encoded predictors. It was tuned over a wide range of
+hyperparameters including number of rounds, maximum tree depth, learning
+rate, regularization term, column subsample ratio, minimum child weight,
+and row subsample ratio. For these three models, hyperparameters were
+tuned using 5-fold cross-validation, and varaible importance plots were
+generated. These plots helped identify the most significant predictors
+of delay duration based on impurity reduction and model contribution.
+The three plots were combined into a single visualization to highlight
+consistently important features across models.</p>
+<p>Lastly, after fitting, predictions were generated for both training
+and test sets, and a comparison table was created to summarize each
+model’s performance. The best model was defined as the one with the
+lowest RMSE and MAE, and the highest R² on the test set.</p>
 </div>
 
 

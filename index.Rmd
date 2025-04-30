@@ -5,9 +5,11 @@ output: html_document
 
 Welcome to the **TTC Subway Delay Analysis** website.  
 
-This project explores factors contributing to delays in Toronto's subway system using data on service disruptions, weather conditions, and neighborhood populations. 
+This project explores factors contributing to delays in Toronto's subway system using data on service disruptions, weather conditions, and neighborhood populations. After conducting exploratory analysis to find delay patterns, five machine learning models were trained to predict delay duration. While overall predictive performance was limited, consistent patterns emerged, highlighting the importance of time of day, line (especially the Sheppard line), service population, and certain weather conditions. This work offers insights into the complexity of delay behavior and provides a foundation for future, data-driven improvements to urban transit planning.
 
-Navigate the tabs above to learn more about the analysis...
+The exploratory data analysis report can be found [here](https://github.com/omina26/TTC-Subway-Delay-Analysis/blob/main/EDA/EDA_report.pdf).
+
+The machine learning report can be found [here](https://github.com/omina26/TTC-Subway-Delay-Analysis/blob/main/ML/ML_report.pdf).
 
 -Omina Nematova
 

@@ -1,0 +1,478 @@
+---
+title: "ML_report"
+author: "Omina Nematova"
+date: "April 30, 2025"
+output: html_document
+---
+
+### Project GitHub: https://github.com/omina26/TTC-Subway-Delay-Analysis
+### Project Website: https://omina26.github.io/TTC-Subway-Delay-Analysis/
+
+```{r imports, message=FALSE, include=FALSE}
+library(knitr)
+library(tidyverse)
+library(caret)
+library(Metrics)
+library(mgcv)
+library(caret)
+library(ranger)
+library(gbm)
+library(doParallel)
+library(dplyr)
+library(xgboost)
+library(broom)
+library(kableExtra)
+library(patchwork)
+```
+
+```{r data, include=FALSE}
+# load data
+df = read.csv("../data/merged_data.csv", header = TRUE)
+
+# subset to relevant columns
+selected_vars = c(
+  "min_delay", "bound", "line", "station", "apparent_temperature", 
+  "relative_humidity", "precipitation", "snowfall", "snow_depth", 
+  "cloud_cover", "wind_speed", "wind_gusts", "hour", "service_population"
+)
+
+df = df |> 
+  select(all_of(selected_vars)) |>
+  mutate(
+    bound = as.factor(bound),
+    line = as.factor(line),
+    station = as.factor(station)
+  )
+
+# set seed
+set.seed(754)
+
+# train-test split (70/30)
+split_index = createDataPartition(df$min_delay, p = 0.7, list = FALSE)
+
+train_x = df[split_index, !(names(df) %in% "min_delay")]
+train_y = df[split_index, "min_delay", drop = FALSE]
+
+test_x  = df[-split_index, !(names(df) %in% "min_delay")]
+test_y  = df[-split_index, "min_delay", drop = FALSE]
+```
+
+```{r GLM, include=FALSE}
+# select predictors excluding 'station'
+predictors_glm = c(
+  "bound", "line", "apparent_temperature", "relative_humidity",
+  "precipitation", "snowfall", "snow_depth", "cloud_cover",
+  "wind_speed", "wind_gusts", "hour", "service_population"
+)
+
+# prepare training data
+train_glm = train_x |> select(all_of(predictors_glm))
+test_glm  = test_x |> select(all_of(predictors_glm))
+
+# fit GLM
+glm_gamma = glm(
+  min_delay ~ .,
+  data = cbind(train_y, train_glm),
+  family = Gamma(link = "log")
+)
+
+# predict
+pred_train_glm = predict(glm_gamma, newdata = train_glm, type = "response")
+pred_test_glm  = predict(glm_gamma, newdata = test_glm, type = "response")
+
+# evaluate performance
+glm_perf = tibble(
+  Model = "GLM (Gamma)",
+  RMSE_Train = rmse(train_y$min_delay, pred_train_glm),
+  MAE_Train = mae(train_y$min_delay, pred_train_glm),
+  R2_Train = 1 - sum((train_y$min_delay - pred_train_glm)^2) / sum((train_y$min_delay - mean(train_y$min_delay))^2),
+  RMSE_Test = rmse(test_y$min_delay, pred_test_glm),
+  MAE_Test = mae(test_y$min_delay, pred_test_glm),
+  R2_Test = 1 - sum((test_y$min_delay - pred_test_glm)^2) / sum((test_y$min_delay - mean(test_y$min_delay))^2)
+)
+```
+
+```{r GAM, include=FALSE}
+# fit GAM with smooth terms for continuous variables
+gam_model = gam(
+  min_delay ~ bound + line +
+    s(apparent_temperature) +
+    s(relative_humidity) +
+    s(precipitation) +
+    s(snowfall) +
+    s(snow_depth) +
+    s(cloud_cover) +
+    s(wind_speed) +
+    s(wind_gusts) +
+    s(hour) +
+    s(service_population),
+  family = Gamma(link = "log"),
+  data = cbind(train_y, train_glm)
+)
+
+# predict on train and test sets
+pred_train_gam = predict(gam_model, newdata = train_glm, type = "response")
+pred_test_gam  = predict(gam_model, newdata = test_glm, type = "response")
+
+# evaluate performance
+gam_perf = tibble(
+  Model = "GAM",
+  RMSE_Train = rmse(train_y$min_delay, pred_train_gam),
+  MAE_Train = mae(train_y$min_delay, pred_train_gam),
+  R2_Train = 1 - sum((train_y$min_delay - pred_train_gam)^2) / sum((train_y$min_delay - mean(train_y$min_delay))^2),
+  RMSE_Test = rmse(test_y$min_delay, pred_test_gam),
+  MAE_Test = mae(test_y$min_delay, pred_test_gam),
+  R2_Test = 1 - sum((test_y$min_delay - pred_test_gam)^2) / sum((test_y$min_delay - mean(test_y$min_delay))^2)
+)
+```
+
+```{r RF, include=FALSE}
+# combine training data for formula interface
+train_rf_full = cbind(train_y, train_x)
+test_rf_full  = cbind(test_y, test_x)
+
+# define training control
+ctrl = trainControl(method = "cv", number = 5)
+
+# set up tuning grid
+rf_grid = expand.grid(
+  mtry = c(3, 5, 7),
+  splitrule = "variance",
+  min.node.size = c(5, 10)
+)
+
+# train with tuning
+set.seed(754)
+rf = train(
+  x = train_x,
+  y = train_y$min_delay,
+  method = "ranger",
+  trControl = trainControl(method = "cv", number = 5),
+  tuneGrid = rf_grid,
+  importance = "impurity",
+  num.trees = 500
+)
+
+# predict and evaluate
+pred_train_rf = predict(rf, newdata = train_x)
+pred_test_rf  = predict(rf, newdata = test_x)
+
+# evaluate performance
+rf_perf = tibble(
+  Model = "Random Forest",
+  RMSE_Train = rmse(train_y$min_delay, pred_train_rf),
+  MAE_Train = mae(train_y$min_delay, pred_train_rf),
+  R2_Train = 1 - sum((train_y$min_delay - pred_train_rf)^2) / sum((train_y$min_delay - mean(train_y$min_delay))^2),
+  RMSE_Test = rmse(test_y$min_delay, pred_test_rf),
+  MAE_Test = mae(test_y$min_delay, pred_test_rf),
+  R2_Test = 1 - sum((test_y$min_delay - pred_test_rf)^2) / sum((test_y$min_delay - mean(test_y$min_delay))^2)
+)
+```
+
+```{r GB, include=FALSE}
+# combine training and test sets for gbm
+train_gbm = cbind(train_y, train_x)
+test_gbm  = cbind(test_y, test_x)
+
+# register parallel backend
+cl = makePSOCKcluster(4)
+registerDoParallel(cl)
+
+# tuning grid
+gbm_grid = expand.grid(
+  n.trees = c(200, 500),
+  interaction.depth = c(4, 6, 8),
+  shrinkage = c(0.01, 0.05),
+  n.minobsinnode = c(5, 10)
+)
+
+# train GBM model with tuning
+set.seed(754)
+gbm = train(
+  min_delay ~ ., 
+  data = train_gbm,
+  method = "gbm",
+  trControl = trainControl(method = "cv", number = 5),
+  tuneGrid = gbm_grid,
+  verbose = FALSE
+)
+
+# Stop the parallel cluster
+stopCluster(cl)
+registerDoSEQ()
+
+# predict
+pred_train_gbm = predict(gbm, newdata = train_gbm, n.trees = gbm$n.trees)
+pred_test_gbm  = predict(gbm, newdata = test_gbm,  n.trees = gbm$n.trees)
+
+# best model
+kable(gbm$bestTune, caption = "Best Hyperparameters for GBM", digits = 3)
+
+# evaluate performance
+gbm_perf = tibble(
+  Model = "Gradient Boosting (Tuned)",
+  RMSE_Train = rmse(train_y$min_delay, pred_train_gbm),
+  MAE_Train = mae(train_y$min_delay, pred_train_gbm),
+  R2_Train = 1 - sum((train_y$min_delay - pred_train_gbm)^2) / sum((train_y$min_delay - mean(train_y$min_delay))^2),
+  RMSE_Test = rmse(test_y$min_delay, pred_test_gbm),
+  MAE_Test = mae(test_y$min_delay, pred_test_gbm),
+  R2_Test = 1 - sum((test_y$min_delay - pred_test_gbm)^2) / sum((test_y$min_delay - mean(test_y$min_delay))^2)
+)
+
+```
+
+```{r XGB, include=FALSE}
+# one-hot encode predictors for XGBoost
+train_matrix = model.matrix(min_delay ~ . - 1, data = cbind(train_y, train_x))
+test_matrix  = model.matrix(min_delay ~ . - 1, data = cbind(test_y, test_x))
+
+# extract response variable
+train_label = train_y$min_delay
+test_label  = test_y$min_delay
+
+# convert to data.frames for caret
+train_xgb = as.data.frame(train_matrix)
+train_xgb$min_delay = train_y$min_delay
+test_xgb = as.data.frame(test_matrix)
+
+# parallel backend
+cl = makePSOCKcluster(4)
+registerDoParallel(cl)
+
+# tuning grid
+xgb_grid = expand.grid(
+  nrounds = c(200, 500),
+  max_depth = c(4, 6),
+  eta = c(0.05, 0.1),
+  gamma = c(0, 1),
+  colsample_bytree = c(0.7, 0.9),
+  min_child_weight = c(5, 10),
+  subsample = c(0.7, 0.9)
+)
+
+# train tuned model
+set.seed(754)
+xgb = train(
+  min_delay ~ .,
+  data = train_xgb,
+  method = "xgbTree",
+  trControl = trainControl(method = "cv", number = 5),
+  tuneGrid = xgb_grid,
+  verbose = FALSE
+)
+
+# stop parallel backend
+stopCluster(cl)
+registerDoSEQ()
+
+# predict with tuned model
+pred_train_xgb = predict(xgb, newdata = train_xgb)
+pred_test_xgb  = predict(xgb, newdata = test_xgb)
+
+# evaluate performance
+xgb_perf= tibble(
+  Model = "XGBoost (Tuned)",
+  RMSE_Train = rmse(train_label, pred_train_xgb),
+  MAE_Train = mae(train_label, pred_train_xgb),
+  R2_Train = 1 - sum((train_label - pred_train_xgb)^2) / sum((train_label - mean(train_label))^2),
+  RMSE_Test = rmse(test_label, pred_test_xgb),
+  MAE_Test = mae(test_label, pred_test_xgb),
+  R2_Test = 1 - sum((test_label - pred_test_xgb)^2) / sum((test_label - mean(test_label))^2)
+)
+```
+
+## Introduction
+As businesses increasingly encourage employees to return to in-oﬀice work, reliable transporta- tion is becoming more important than ever for commuters. Many workers rely on subway systems for their daily commutes. Subway delays can disrupt schedules, increase travel time uncertainty, and even influence long-term decisions about where people choose to live or work. While some delays may be unavoidable, understanding when and where these delays occur, as well as how external factors like weather conditions and population density contribute to service disruptions can help both commuters and policymakers make informed decisions.
+
+Motivated by the question, “What factors affect subway delays on Toronto’s TTC?”, this study builds on prior exploratory analysis by using machine learning to predict the duration of subway delays. A merged dataset was constructed using multiple sources. Subway delay reports (see reference) were obtained from the City of Toronto Open Data Catalogue, providing details on location, time, and cause of delays across the TTC subway network. Service population estimates were derived from Toronto Neighbourhood Profiles (see reference), also sourced from the Open Data Catalogue, while spatial data for neighbourhoods and station locations was incorporated using the Toronto Neighbourhoods shapefile (see reference), TTC Subway and Streetcar Map (see reference) and OpenStreetMap API (see reference). Additionally, hourly weather data from 2024 was retrieved using the Open-meteo API (see reference), allowing for an assessment of temperature, precipitation, and other environmental factors at the time of each recorded delay. To address the research question, five predictive models were developed and compared to determine which could most accurately estimate delay duration. Model performance was evaluated using root mean squared error (RMSE), mean absolute error (MAE), and R², and key factors influencing delay length were identified using variable importance plots.
+
+## Methods
+This analysis used the merged dataset created during the exploratory phase, which combined subway delay records, hourly weather data, and population estimates for areas surrounding each TTC station. The TTC Subway Delay Data (2024) from the City of Toronto Open Data Catalogue was cleaned and filtered to retain relevant columns and delay durations between 1 and 30 minutes. Service population estimates were derived from the 2021 Toronto Neighbourhood Profiles and linked to stations using spatial joins based on the Toronto Neighbourhoods shapefile. Subway station coordinates were via the OpenStreetMap API. Hourly weather data from 2024 was retrieved using the Open-Meteo API and included a range of environmental variables. These datasets were merged by station name and hour to produce a unified dataframe used for modeling. All data cleaning and data wrangling steps were conducted in Python. Additional exploratory tables and plots used to analyze the data are included in the EDA report.
+
+As part of the exploratory phase, three interactive visualizations were created using R to better understand subway delay patterns. First, a delay frequency map was generated using the `leaflet` package, displaying the total number of delays at each subway station using scaled circle markers, with popups showing station-level service population. Second, a scatterplot was created with `plotly` to visualize the relationship between service population and average delay duration, grouped by station and subway line. This allowed identification of outliers and variability in delay severity across different areas. Third, a heatmap of delay frequency by hour of day and day of week was constructed using `plotly`, highlighting temporal patterns in delays, such as peaks during rush hours or weekends. These visualizations provided insight into when and where delays were most frequent, and guided feature selection for the modeling stage.
+
+To predict TTC subway delay durations, five supervised learning models were trained and compared using a 70/30 train-test split. All modeling was conducted in R, and performance was evaluated using three key metrics:
+
+- Root Mean Squared Error (RMSE): Measures the square root of the average squared differences between predicted and actual values. It penalizes larger errors more heavily and is expressed in the same units as the target variable (minutes).
+- Mean Absolute Error (MAE): Calculates the average absolute difference between predictions and actual outcomes. It provides a straightforward interpretation of the average error in minutes.
+- R-squared (R²): Represents the proportion of variance in the response variable explained by the model. Higher R² values indicate better explanatory power.
+
+Thirteen predictors were used in all models, including weather conditions, station, subway line, direction, service population, and time of day.
+
+The Generalized Linear Model (GLM) with a Gamma family and log link was selected to model delay duration as a positively right-skewed continuous variable. Categorical variables and continuous predictors were used. The Generalized Additive Model (GAM) was fit using the same predictors, with smooth functions applied to continuous variables to capture non-linear effects. In both cases, predictor significance was assessed using model summary statistics.
+
+The Random Forest model was implemented using the `ranger` method. This ensemble method builds multiple decision trees on bootstrapped subsets and averages predictions to reduce variance. It handles high-cardinality categorical features like station effectively. Tuning was performed over number of predictors at each split and minimum node size. The Gradient Boosting (GBM) model was trained using the `gbm` method, which builds trees sequentially, each trying to correct the residuals of the previous model. Its tuning involved number of trees, tree depth, learning rate, and minimum observations per node. XGBoost, an optimized implementation of gradient boosting, was trained using one-hot encoded predictors. It was tuned over a wide range of hyperparameters including number of rounds, maximum tree depth, learning rate, regularization term, column subsample ratio, minimum child weight, and row subsample ratio. For these three models, hyperparameters were tuned using 5-fold cross-validation, and varaible importance plots were generated. These plots helped identify the most significant predictors of delay duration based on impurity reduction and model contribution. The three plots were combined into a single visualization to highlight consistently important features across models.
+
+Lastly, after fitting, predictions were generated for both training and test sets, and a comparison table was created to summarize each model’s performance. The best model was defined as the one with the lowest RMSE and MAE, and the highest R² on the test set.
+
+## Results
+#### Exploratory Analysis
+Most exploratory tables and plots, along with their corresponding interpretations, are presented in the EDA report. Additional components of the exploratory analysis, including interactive visualizations, are available on the project website under the EDA tab with accompanying conclusions.
+
+#### Model Performance
+Table 1 presents the traing and testing RMSE, MAE, and R2 for all five models. The best model can be obtained by looking for the model with the lowest RMSE and MAE, and the highest R2 on the test set.
+
+```{r model comparison, echo=FALSE}
+# combine all performance data frames
+model_perf = bind_rows(glm_perf, gam_perf, rf_perf, gbm_perf, xgb_perf)
+
+# Identify row with lowest test RMSE
+best_row = which.min(model_perf$RMSE_Test)
+
+# display comparison table
+library(knitr)
+perf_table = kable(model_perf, digits = 3, caption = "Table 1: Model Performance Comparison") |>
+  kable_styling(full_width = FALSE) |>
+  row_spec(best_row, bold = TRUE)
+  
+# save
+save_kable(perf_table, "../plots/model_perf_table.html")
+
+perf_table
+```
+
+As shown in Table 1, the Gradient Boosting model achieved the best overall performance, with a test RMSE of 4.752, a test MAE of 3.273, and a test R2 of 0.017. However, the improvement over the other models is marginal, as the test RMSE, MAE, and R2 values for the remaining models are similarly close. Notably, all models exhibit R2 values near zero, indicating that they explain very little of the variance in delay duration. This suggests that, despite tuning and a diverse set of predictors, none of the models are very effective at accurately predicting subway delay durations.
+
+#### Variable Importance
+Table 2 presents the GLM coefficient summary, including an additional column indicating whether each predictor is statistically significant (p < 0.05). Similarly, Table 3 and Table 4 display the GAM summary, with Table 3 showing the parametric terms and Table 4 presenting the smooth terms. Together, these tables help identify which factors have a statistically significant impact on subway delay duration.
+
+```{r GLM summary, echo=FALSE}
+# tidy summary with p-values
+glm_table = tidy(glm_gamma) |>
+  filter(term != "(Intercept)") |>
+  mutate(Significant = ifelse(p.value < 0.05, "Yes", "No")) |>
+  rename(
+    Term = term,
+    Estimate = estimate,
+    `Std. Error` = std.error,
+    `t-value` = statistic,
+    `p-value` = p.value
+  )
+
+# display nicely
+glm_imp = kable(glm_table, digits = 3, caption = "Table 2: GLM Coefficients Summary") |>
+  kable_styling(full_width = FALSE) |>
+  row_spec(which(glm_table$Significant == "Yes"), bold = TRUE)
+
+save_kable(glm_imp, "../plots/glm_coef_table.html")
+
+glm_imp
+```
+
+```{r GAM summary, echo=FALSE}
+# Parametric terms
+param_terms = tidy(gam_model, parametric = TRUE) |>
+  filter(term != "(Intercept)") |>
+  mutate(Significant = ifelse(p.value < 0.05, "Yes", "No")) |>
+  rename(
+    Term = term,
+    Estimate = estimate,
+    `Std. Error` = std.error,
+    `t-value` = statistic,
+    `p-value` = p.value
+  )
+
+# Smooth terms
+smooth_terms = tidy(gam_model, parametric = FALSE) |>
+  mutate(Significant = ifelse(p.value < 0.05, "Yes", "No")) |>
+  rename(
+    Term = term,
+    `Effective DF` = edf,
+    `Reference DF` = ref.df,
+    `F-value` = statistic,
+    `p-value` = p.value
+  )
+
+# Create two kables
+gam_imp_par = kable(param_terms, digits = 3, caption = "Table 3: GAM Parametric Coefficients Summary", format = "html") |>
+  kable_styling(full_width = FALSE) |>
+  row_spec(which(param_terms$Significant == "Yes"), bold = TRUE)
+
+gam_imp_smo = kable(smooth_terms, digits = 3, caption = "Table 4: GAM Smooth Coefficients Summary", format = "html") |>
+  kable_styling(full_width = FALSE) |>
+  row_spec(which(smooth_terms$Significant == "Yes"), bold = TRUE)
+
+save_kable(gam_imp_par, "../plots/gam_coef_par_table.html")
+save_kable(gam_imp_smo, "../plots/gam_coef_smo_table.html")
+
+gam_imp_par
+gam_imp_smo
+```
+
+From Table 2, the variables 'lineSHP' and 'hour' are identified as statistically significant predictors in the GLM model, indicating that both the Sheppard subway line and the time of day have a notable impact on delay duration. In the GAM model, Table 3 shows that 'lineSHP' remains a significant parametric term, while Table 4 reveals that the smooth terms 'hour' and 'service_population' are also statistically significant. This suggests that delay durations vary nonlinearly over the course of the day and with the population density near stations.
+
+Figure 1 presents the variable importance plots for the Random Forest, Gradient Boosting, and XGBoost models, each displaying the top 5 most influential variables based on their respective importance metrics.
+
+```{r vi, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+# RF variable importance
+vi_rf = varImp(rf)$importance |>
+  as_tibble(rownames = "Variable") |>
+  arrange(desc(Overall)) |>
+  head(5)
+
+p_rf = ggplot(vi_rf, aes(x = reorder(Variable, Overall), y = Overall)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(title = "(a) Variable Importance for Random Forest (Top 5)", x = NULL, y = "Importance")
+
+# GBM variable importance
+vi_gbm = varImp(gbm)$importance |>
+  as_tibble(rownames = "Variable") |>
+  arrange(desc(Overall)) |>
+  head(5)
+
+p_gbm = ggplot(vi_gbm, aes(x = reorder(Variable, Overall), y = Overall)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(title = "(b) Variable Importance for GBM (Top 5)", x = NULL, y = "Importance")
+
+# XGB variable importance
+vi_xgb = varImp(xgb)$importance |>
+  as_tibble(rownames = "Variable") |>
+  arrange(desc(Overall)) |>
+  head(5)
+
+p_xgb = ggplot(vi_xgb, aes(x = reorder(Variable, Overall), y = Overall)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(title = "(c) Variable Importances  for XGBoost (Top 5)", x = NULL, y = "Importance")
+
+# Combine plots
+full_plot <- (
+  p_rf /
+  p_gbm / 
+  p_xgb            
+) +
+  plot_annotation(title = "Figure 1: Variable Importance Across Tuned Tree-Based Models")
+
+# save
+ggsave("../plots/imp_plot.png", full_plot)
+
+print(full_plot)
+```
+
+From Figure 1, the most important variable in the Random Forest model was apparent temperature, while hour was most important in the Gradient Boosting model, and relative humidity ranked highest in the XGBoost model. Notably, all three models identified apparent temperature, relative humidity, and wind speed as among the most influential predictors.
+
+When considering both the significant predictors from the GLM and GAM models and the variable importance results from the tree-based models, several variables stand out as consistently influential across models. Specifically, whether the subway operates on the Sheppard line (lineSHP), the hour of the day, service population, apparent temperature, and relative humidity appear to have the greatest impact on delay duration across multiple modeling approaches.
+
+## Conclusion
+This study aimed to identify the key factors influencing subway delay durations on Toronto’s TTC system by building predictive models using a combination of operational, environmental, and demographic data. Although none of the five models, GLM, GAM, Random Forest, Gradient Boosting, and XGBoost, demonstrated strong predictive performance, with R2 values near zero, they did reveal features most associated with delay severity. Among them, the Gradient Boosting model performed best, achieving the lowest prediction error on the test set.
+
+Several findings from the modeling phase aligned with earlier exploratory data analysis (EDA). For example, lineSHP was identified as a significant predictor in both the GLM and GAM models, as well as in variable importance plots from tree-based models. This supports the EDA finding that the Sheppard Line experienced the longest delays among all TTC lines. Additionally, hour emerged as a statistically significant smooth term in the GAM and as a top predictor in ensemble models, reinforcing EDA insights that delays were most frequent during morning and afternoon rush hours. Interestingly, although peak-hour delays were more frequent, their durations tended to be shorter, suggesting a nonlinear relationship that was appropriately captured by modeling hour as a smooth term.
+
+Weather-related variables such as apparent temperature and relative humidity also ranked highly in the variable importance plots, even though EDA showed weak linear correlation between weather and delay duration. This suggests that nonlinear models may be capturing more complex interactions between environmental conditions and service disruptions.
+
+However, the study has several limitations. First, the available data lacked operational details such as train frequency, staffing levels, or mechanical issues, which are likely to have a stronger and more direct effect on delay durations. Second, ridership data, another potentially informative feature, was not available for 2024 and could not be included in the analysis.
+
+Despite these limitations, the study provides valuable insights into the types of factors associated with TTC subway delay durations. Enhancing model inputs with more detailed real-time data could yield more actionable results for transit planners and city officials.
+
+## References
+
+- [Open-meteo documentation](https://open-meteo.com/en/docs/historical-weather-api) 
+- [OpenStreetMap API documentation](https://wiki.openstreetmap.org/wiki/API_v0.6) 
+- [Toronto Neighbourhood Profiles](https://open.toronto.ca/dataset/neighbourhood-profiles/)
+- [Toronto Neighbourhoods](https://open.toronto.ca/dataset/neighbourhoods/)
+- [TTC Subway and Streetcar Map](https://cdn.ttc.ca/-/media/Project/TTC/DevProto/Images/Home/Routes-and-Schedules/Landing-page-pdfsTTC_SubwayStreetcarMap_2021-11.pdf?rev=909317034177450b8b09ba5b247e24bf)
+- [TTC Subway Delay Data](https://open.toronto.ca/dataset/ttc-subway-delay-data/)
+
+
