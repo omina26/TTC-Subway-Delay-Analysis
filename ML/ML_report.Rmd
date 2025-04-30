@@ -1,5 +1,5 @@
 ---
-title: "ML_report"
+title: "Modeling Subway Delay Durations in Toronto’s TTC System: A Machine Learning Approach"
 author: "Omina Nematova"
 date: "April 30, 2025"
 output:
