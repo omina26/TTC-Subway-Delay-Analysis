@@ -3,8 +3,8 @@ title: "ML_report"
 author: "Omina Nematova"
 date: "April 30, 2025"
 output:
-  pdf_document: default
-  html_document: default
+  pdf_document:
+    latex_engine: xelatex
 ---
 
 ### Project GitHub: https://github.com/omina26/TTC-Subway-Delay-Analysis
@@ -24,6 +24,7 @@ library(dplyr)
 library(xgboost)
 library(broom)
 library(kableExtra)
+library(patchwork)
 ```
 
 ```{r load data, include=FALSE}
@@ -316,9 +317,11 @@ Most exploratory tables and plots, along with their corresponding interpretation
 
 Table 1 presents the traing and testing RMSE, MAE, and R2 for all five models. The best model can be obtained by looking for the model with the lowest RMSE and MAE, and the highest R2 on the test set.
 
-```{r model comparison, echo=FALSE}
+```{r model comparison, echo=FALSE, warning=FALSE}
 # combine all performance data frames
 model_perf = bind_rows(glm_perf, gam_perf, rf_perf, gbm_perf, xgb_perf)
+
+colnames(model_perf) <- gsub("_", " ", colnames(model_perf))
 
 # Identify row with lowest test RMSE
 best_row = which.min(model_perf$RMSE_Test)
@@ -326,11 +329,8 @@ best_row = which.min(model_perf$RMSE_Test)
 # display comparison table
 library(knitr)
 perf_table = kable(model_perf, digits = 3, caption = "Table 1: Model Performance Comparison") |>
-  kable_styling(full_width = FALSE) |>
+  kable_styling(full_width = FALSE, latex_options = "hold_position") |>
   row_spec(best_row, bold = TRUE)
-  
-# save
-save_kable(perf_table, "../plots/model_perf_table.html")
 
 perf_table
 ```
@@ -351,14 +351,15 @@ glm_table = tidy(glm_gamma) |>
     `Std. Error` = std.error,
     `t-value` = statistic,
     `p-value` = p.value
-  )
+  ) |>
+  mutate(across(everything(is.character), ~ gsub("[-_]", " ", .)))
+
+colnames(glm_table) <- gsub("[-_]", " ", colnames(glm_table))
 
 # display nicely
 glm_imp = kable(glm_table, digits = 3, caption = "Table 2: GLM Coefficients Summary") |>
   kable_styling(full_width = FALSE) |>
   row_spec(which(glm_table$Significant == "Yes"), bold = TRUE)
-
-save_kable(glm_imp, "../plots/glm_coef_table.html")
 
 glm_imp
 ```
@@ -374,7 +375,10 @@ param_terms = tidy(gam_model, parametric = TRUE) |>
     `Std. Error` = std.error,
     `t-value` = statistic,
     `p-value` = p.value
-  )
+  ) |>
+  mutate(across(everything(is.character), ~ gsub("[-_]", " ", .)))
+
+colnames(param_terms) <- gsub("[-_]", " ", colnames(param_terms))
 
 # Smooth terms
 smooth_terms = tidy(gam_model, parametric = FALSE) |>
@@ -385,29 +389,29 @@ smooth_terms = tidy(gam_model, parametric = FALSE) |>
     `Reference DF` = ref.df,
     `F-value` = statistic,
     `p-value` = p.value
-  )
+  ) |>
+  mutate(across(everything(is.character), ~ gsub("[-_]", " ", .)))
+
+colnames(smooth_terms) <- gsub("[-_]", " ", colnames(smooth_terms))
 
 # Create two kables
-gam_imp_par = kable(param_terms, digits = 3, caption = "Table 3: GAM Parametric Coefficients Summary", format = "html") |>
+gam_imp_par = kable(param_terms, digits = 3, caption = "Table 3: GAM Parametric Coefficients Summary") |>
   kable_styling(full_width = FALSE) |>
   row_spec(which(param_terms$Significant == "Yes"), bold = TRUE)
 
-gam_imp_smo = kable(smooth_terms, digits = 3, caption = "Table 4: GAM Smooth Coefficients Summary", format = "html") |>
+gam_imp_smo = kable(smooth_terms, digits = 3, caption = "Table 4: GAM Smooth Coefficients Summary") |>
   kable_styling(full_width = FALSE) |>
   row_spec(which(smooth_terms$Significant == "Yes"), bold = TRUE)
-
-save_kable(gam_imp_par, "../plots/gam_coef_par_table.html")
-save_kable(gam_imp_smo, "../plots/gam_coef_smo_table.html")
 
 gam_imp_par
 gam_imp_smo
 ```
 
-From Table 2, the variables 'lineSHP' and 'hour' are identified as statistically significant predictors in the GLM model, indicating that both the Sheppard subway line and the time of day have a notable impact on delay duration. In the GAM model, Table 3 shows that 'lineSHP' remains a significant parametric term, while Table 4 reveals that the smooth terms 'hour' and 'service_population' are also statistically significant. This suggests that delay durations vary nonlinearly over the course of the day and with the population density near stations.
+From Table 2, the variables 'lineSHP' and 'hour' are identified as statistically significant predictors in the GLM model, indicating that both the Sheppard subway line and the time of day have a notable impact on delay duration. In the GAM model, Table 3 shows that 'lineSHP' remains a significant parametric term, while Table 4 reveals that the smooth terms 'hour' and 'service population' are also statistically significant. This suggests that delay durations vary nonlinearly over the course of the day and with the population density near stations.
 
 Figure 1 presents the variable importance plots for the Random Forest, Gradient Boosting, and XGBoost models, each displaying the top 5 most influential variables based on their respective importance metrics.
 
-```{r vi, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+```{r vi, include=FALSE, results='hide', message=FALSE, warning=FALSE}
 # RF variable importance
 vi_rf = varImp(rf)$importance |>
   as_tibble(rownames = "Variable") |>
@@ -448,12 +452,12 @@ full_plot <- (
   p_xgb            
 ) +
   plot_annotation(title = "Figure 1: Variable Importance Across Tuned Tree-Based Models")
-
-# save
-ggsave("../plots/imp_plot.png", full_plot)
-
-print(full_plot)
 ```
+
+```{r display vi, echo=FALSE}
+full_plot
+```
+
 
 
 From Figure 1, the most important variable in the Random Forest model was apparent temperature, while hour was most important in the Gradient Boosting model, and relative humidity ranked highest in the XGBoost model. Notably, all three models identified apparent temperature, relative humidity, and wind speed as among the most influential predictors.

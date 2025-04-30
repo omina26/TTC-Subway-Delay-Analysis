@@ -17,6 +17,7 @@ library(dplyr)
 library(xgboost)
 library(broom)
 library(kableExtra)
+library(patchwork)
 ```
 
 First, load data.
