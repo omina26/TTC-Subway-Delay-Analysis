@@ -2,7 +2,9 @@
 title: "ML_report"
 author: "Omina Nematova"
 date: "April 30, 2025"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ### Project GitHub: https://github.com/omina26/TTC-Subway-Delay-Analysis
@@ -22,10 +24,9 @@ library(dplyr)
 library(xgboost)
 library(broom)
 library(kableExtra)
-library(patchwork)
 ```
 
-```{r data, include=FALSE}
+```{r load data, include=FALSE}
 # load data
 df = read.csv("../data/merged_data.csv", header = TRUE)
 
@@ -159,7 +160,7 @@ pred_test_rf  = predict(rf, newdata = test_x)
 
 # evaluate performance
 rf_perf = tibble(
-  Model = "Random Forest",
+  Model = "Random Forest (Tuned)",
   RMSE_Train = rmse(train_y$min_delay, pred_train_rf),
   MAE_Train = mae(train_y$min_delay, pred_train_rf),
   R2_Train = 1 - sum((train_y$min_delay - pred_train_rf)^2) / sum((train_y$min_delay - mean(train_y$min_delay))^2),
@@ -281,6 +282,7 @@ xgb_perf= tibble(
 )
 ```
 
+
 ## Introduction
 As businesses increasingly encourage employees to return to in-oﬀice work, reliable transporta- tion is becoming more important than ever for commuters. Many workers rely on subway systems for their daily commutes. Subway delays can disrupt schedules, increase travel time uncertainty, and even influence long-term decisions about where people choose to live or work. While some delays may be unavoidable, understanding when and where these delays occur, as well as how external factors like weather conditions and population density contribute to service disruptions can help both commuters and policymakers make informed decisions.
 
@@ -306,10 +308,12 @@ The Random Forest model was implemented using the `ranger` method. This ensemble
 Lastly, after fitting, predictions were generated for both training and test sets, and a comparison table was created to summarize each model’s performance. The best model was defined as the one with the lowest RMSE and MAE, and the highest R² on the test set.
 
 ## Results
-#### Exploratory Analysis
+### Exploratory Analysis
+
 Most exploratory tables and plots, along with their corresponding interpretations, are presented in the EDA report. Additional components of the exploratory analysis, including interactive visualizations, are available on the project website under the EDA tab with accompanying conclusions.
 
-#### Model Performance
+### Model Performance
+
 Table 1 presents the traing and testing RMSE, MAE, and R2 for all five models. The best model can be obtained by looking for the model with the lowest RMSE and MAE, and the highest R2 on the test set.
 
 ```{r model comparison, echo=FALSE}
@@ -333,7 +337,7 @@ perf_table
 
 As shown in Table 1, the Gradient Boosting model achieved the best overall performance, with a test RMSE of 4.752, a test MAE of 3.273, and a test R2 of 0.017. However, the improvement over the other models is marginal, as the test RMSE, MAE, and R2 values for the remaining models are similarly close. Notably, all models exhibit R2 values near zero, indicating that they explain very little of the variance in delay duration. This suggests that, despite tuning and a diverse set of predictors, none of the models are very effective at accurately predicting subway delay durations.
 
-#### Variable Importance
+### Variable Importance
 Table 2 presents the GLM coefficient summary, including an additional column indicating whether each predictor is statistically significant (p < 0.05). Similarly, Table 3 and Table 4 display the GAM summary, with Table 3 showing the parametric terms and Table 4 presenting the smooth terms. Together, these tables help identify which factors have a statistically significant impact on subway delay duration.
 
 ```{r GLM summary, echo=FALSE}
@@ -451,6 +455,7 @@ ggsave("../plots/imp_plot.png", full_plot)
 print(full_plot)
 ```
 
+
 From Figure 1, the most important variable in the Random Forest model was apparent temperature, while hour was most important in the Gradient Boosting model, and relative humidity ranked highest in the XGBoost model. Notably, all three models identified apparent temperature, relative humidity, and wind speed as among the most influential predictors.
 
 When considering both the significant predictors from the GLM and GAM models and the variable importance results from the tree-based models, several variables stand out as consistently influential across models. Specifically, whether the subway operates on the Sheppard line (lineSHP), the hour of the day, service population, apparent temperature, and relative humidity appear to have the greatest impact on delay duration across multiple modeling approaches.
@@ -468,11 +473,11 @@ Despite these limitations, the study provides valuable insights into the types o
 
 ## References
 
-- [Open-meteo documentation](https://open-meteo.com/en/docs/historical-weather-api) 
-- [OpenStreetMap API documentation](https://wiki.openstreetmap.org/wiki/API_v0.6) 
-- [Toronto Neighbourhood Profiles](https://open.toronto.ca/dataset/neighbourhood-profiles/)
-- [Toronto Neighbourhoods](https://open.toronto.ca/dataset/neighbourhoods/)
-- [TTC Subway and Streetcar Map](https://cdn.ttc.ca/-/media/Project/TTC/DevProto/Images/Home/Routes-and-Schedules/Landing-page-pdfsTTC_SubwayStreetcarMap_2021-11.pdf?rev=909317034177450b8b09ba5b247e24bf)
-- [TTC Subway Delay Data](https://open.toronto.ca/dataset/ttc-subway-delay-data/)
+- Open-meteo documentation: https://open-meteo.com/en/docs/historical-weather-api)
+- OpenStreetMap API documentation: https://wiki.openstreetmap.org/wiki/API_v0.6
+- Toronto Neighbourhood Profiles: https://open.toronto.ca/dataset/neighbourhood-profiles/
+- Toronto Neighbourhoods: https://open.toronto.ca/dataset/neighbourhoods/
+- TTC Subway and Streetcar Map: https://cdn.ttc.ca/-/media/Project/TTC/DevProto/Images/Home/Routes-and-Schedules/Landing-page-pdfsTTC_SubwayStreetcarMap_2021-11.pdf?rev=909317034177450b8b09ba5b247e24bf
+- TTC Subway Delay Data: https://open.toronto.ca/dataset/ttc-subway-delay-data/
 
 
